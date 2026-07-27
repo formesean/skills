@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "formesean",
+  "description": "Sean's engineering method as portable skills — one loop from ticket to handoff.",
+  "owner": {
+    "name": "Sean Aguilar",
+    "url": "https://github.com/formesean"
+  },
+  "plugins": [
+    {
+      "name": "skills",
+      "description": "Frame, pin, plan, implement, verify, ship — plus answer, debug, review, and which. One method, Claude Code and Codex.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
