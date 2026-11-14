@@ -1,7 +1,7 @@
 {
   "name": "skills",
-  "version": "0.1.0",
-  "description": "Sean's engineering method as portable skills: frame, pin, plan, implement, verify, ship — plus answer, debug, review, and which. Works in Claude Code and Codex.",
+  "version": "0.2.0",
+  "description": "Sean's engineering method as portable skills: frame, pin, plan, implement, verify, ship \u2014 plus answer, debug, review, and which. Works in Claude Code and Codex.",
   "author": {
     "name": "Sean Aguilar",
     "url": "https://github.com/formesean"
@@ -9,6 +9,12 @@
   "homepage": "https://github.com/formesean/skills",
   "repository": "https://github.com/formesean/skills",
   "license": "MIT",
-  "keywords": ["workflow", "planning", "debugging", "code-review", "productivity"],
+  "keywords": [
+    "workflow",
+    "planning",
+    "debugging",
+    "code-review",
+    "productivity"
+  ],
   "skills": "./skills/"
 }

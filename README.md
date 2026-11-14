@@ -1,18 +1,11 @@
-# Skills For Shipping Someone Else's Ticket
+# Skills for engineering work
 
-My agent skills, for the part of engineering that isn't typing — reading an ask nobody
-finished writing, settling the decisions it hid, and handing back something a reviewer can
-trust.
+Ten portable skills for understanding tickets, making decisions, implementing changes,
+and handing back evidence. Use one or combine only the stages the task needs. Simple
+edits do not need an interview or a full pipeline. Skills guide model behavior; they
+cannot guarantee invocation, persistent memory, or sandbox enforcement.
 
-Most agent workflows own the whole process: a pipeline you enter at one end and hope to
-exit at the other. When the process breaks, you can't tell which stage broke it. These are
-ten small skills instead — each with one job, each usable alone, each naming the next.
-Take three and ignore the rest. Rewrite the ones you keep.
-
-They fire on their own. Say "this is broken" and `debug` runs; finish a change and `ship`
-writes the handoff. No invocation ceremony.
-
-## Quickstart
+## Install
 
 Claude Code:
 
@@ -21,119 +14,73 @@ claude plugin marketplace add formesean/skills
 claude plugin install skills@formesean
 ```
 
-Codex:
+Codex (plugin-capable releases):
 
 ```sh
 codex plugin marketplace add formesean/skills
 codex plugin add skills@formesean
 ```
 
-Skills namespace as `skills:<name>`. There's no setup step and no per-repo config — every
-skill derives what it needs from the repo it runs in.
+Codex command syntax was checked against local CLI `0.167.0-alpha.4`; complete plugin
+installation was not exercised in this review. Claude Code was unavailable locally.
+Check your installed CLI help when commands differ. The two platforms share `skills/`;
+platform-specific agent configuration is separate. Installation from the default branch
+does not include an unmerged PR.
 
-## Why These Skills Exist
+## Choose the smallest useful workflow
 
-Each one exists because of a specific way work goes wrong. Not hypothetically.
+| Skill | Deliverable |
+| --- | --- |
+| [which](skills/which/SKILL.md) | Select a skill; no forced pipeline |
+| [answer](skills/answer/SKILL.md) | Stakeholder reply backed by current evidence |
+| [frame](skills/frame/SKILL.md) | Criteria, provenance, and consequential ambiguity |
+| [pin](skills/pin/SKILL.md) | Resolve consequential decisions without routine reapproval |
+| [plan](skills/plan/SKILL.md) | Small, checkable implementation sequence |
+| [implement](skills/implement/SKILL.md) | Requested change and relevant validation |
+| [debug](skills/debug/SKILL.md) | Evidence-backed cause, authorized fix, regression evidence |
+| [review](skills/review/SKILL.md) | Ranked findings with concrete failure scenarios |
+| [verify](skills/verify/SKILL.md) | PASS / FAIL / BLOCKED with observed evidence |
+| [ship](skills/ship/SKILL.md) | Handoff or explicitly authorized publication |
 
-### #1: Building The Wrong Thing, Correctly
+Examples: “Diagnose only” remains read-only. “Review and fix” completes the review and
+then repairs within the same task. “Write a commit message” does not authorize a push.
+“Open a draft PR” authorizes that action, not merging or deployment.
 
-> "The hardest single part of building a software system is deciding precisely what to build."
->
-> Fred Brooks, [The Mythical Man-Month](https://www.amazon.com/Mythical-Man-Month-Software-Engineering-Anniversary/dp/0201835959)
+## Optional agents and local harness
 
-**The Problem**: A ticket reads clearly, so the work starts. But the title was written by
-someone who already knew the answer, and left out everything they considered obvious.
-Nobody wrote down the gap. It surfaces in review, after the code exists.
+[The harness protocol](harness/PROTOCOL.md) describes bounded retrieval, checkpointing,
+freshness checks, recovery, and agent handoffs. `harness/state.py` saves compact local
+task state under the target repository's Git metadata. It never executes saved commands
+and does not run models. It is opt-in: clone this repo to use the Python CLI.
 
-**The Fix**: [`frame`](skills/frame/SKILL.md) turns the ask into numbered acceptance
-criteria — and marks which ones you inferred rather than read. The marked ones are the
-whole point. That's the list you send back before deciding anything.
+Three worker definitions are provided:
 
-### #2: Decisions Made Silently, Mid-Build
+- `agents/*.md`: Claude plugin explorer, reviewer, and verifier. Explorer/reviewer
+  allow only Read/Grep/Glob; verifier also has Bash, governed by host permissions.
+- `.codex/agents/*.toml`: project-scoped Codex counterparts. They are available in this
+  checkout on supported clients. Copy selected files into another project's
+  `.codex/agents/` only if desired; do not overwrite existing roles. These are behavioral
+  instructions and inherit the host security boundary. Do not assume installing this
+  plugin globally registers its project-scoped Codex agents.
 
-**The Problem**: The plan looked finished because nothing had contradicted it yet. Then a
-choice nobody phrased as a question got answered by whoever happened to be typing at the
-time. It's load-bearing now, and undocumented.
+Start with one coordinating session. Use bounded independent workers when useful; do
+not start three agents for every ticket. Keep memory local and redacted. A checkpoint
+matching Git state still needs environment and external-service revalidation.
 
-**The Fix**: [`pin`](skills/pin/SKILL.md) interrogates the plan one question at a time,
-each with a recommendation attached, until no remaining choice would change what gets
-built. One at a time matters — a wall of six questions gets answered as vibes.
+## Development and checks
 
-[`plan`](skills/plan/SKILL.md) then turns settled decisions into the smallest build order
-that works, each step ending in something you can actually run.
+Python 3.11+ and Git; no third-party Python dependency is needed for the harness:
 
-### #3: Fixing The Symptom, Refiling The Bug
-
-> "Debugging is twice as hard as writing the code in the first place."
->
-> Brian Kernighan, [The Elements of Programming Style](https://www.amazon.com/Elements-Programming-Style-2nd/dp/0070342075)
-
-**The Problem**: A bug report names a symptom. The symptom is where it surfaced, not where
-it broke. A patch at the call site closes the ticket and reopens it next month under a
-different caller — and every sibling caller was broken the whole time.
-
-**The Fix**: [`debug`](skills/debug/SKILL.md) refuses to edit until the cause is named in
-one sentence, then fixes where the callers converge. The siblings nobody filed heal too.
-
-### #4: "Done" Meaning "I Think It Works"
-
-> "Testing shows the presence, not the absence of bugs."
->
-> Edsger W. Dijkstra
-
-**The Problem**: The summary is green because the person who wrote the code also wrote the
-summary. Nobody ran anything. The gap between those two facts is where the incident lives.
-
-**The Fix**: [`verify`](skills/verify/SKILL.md) runs the smallest gate that actually covers
-the diff, pastes failures verbatim, and never reports green on a command it didn't run.
-[`ship`](skills/ship/SKILL.md) then derives the branch name and commit message from what
-the repo already does — and never pushes. The push stays yours.
-
-### Summary
-
-None of this is new. It's the discipline you'd apply if you weren't in a hurry, written
-down so the agent applies it while you are.
-
-## Reference
-
-Don't know which one you need? **[which](skills/which/SKILL.md)** takes the situation and
-names one skill. It routes and stops — it never does the work it points at.
-
-The rest split on one axis — where they sit in the work. **The loop** runs in order, ticket
-to handoff. **Entry points** are where real work actually starts, each routing into the loop
-at the right place.
-
-### The Loop
-
-- **[frame](skills/frame/SKILL.md)** — Someone else's ask. Recover what "done" means as numbered criteria, mark what you inferred, name what's under-specified.
-- **[pin](skills/pin/SKILL.md)** — Before building. Interrogate the plan one question at a time, each with a recommendation, until every decision is settled. No code.
-- **[plan](skills/plan/SKILL.md)** — Decisions settled. Turn them into the smallest build order that works, in dependency order, each step checkable.
-- **[implement](skills/implement/SKILL.md)** — Plan in hand. Build it step by step, check each one, and stop when reality contradicts the plan instead of improvising past it.
-- **[verify](skills/verify/SKILL.md)** — Before calling it done. Smallest gate that covers the diff, residue check on the added lines, repro steps. Verifies, never fixes.
-- **[ship](skills/ship/SKILL.md)** — Handoff. Branch name and Conventional Commit derived from the repo's own history, plus manual test steps. Never pushes.
-
-### Entry Points
-
-- **[answer](skills/answer/SKILL.md)** — A question from outside engineering. Reply from the code, in their language, with the evidence you'd need if it's challenged — without turning it into a change.
-- **[debug](skills/debug/SKILL.md)** — Something is broken. Diagnose to root cause before editing, then fix once at the choke point where the callers converge.
-- **[review](skills/review/SKILL.md)** — Audit a diff, branch, or repo. Evidence-backed findings, one line each, ranked by leverage. Reports, never repairs.
-
-Each skill names its neighbors, so the handoff is automatic — `frame` routes open decisions
-to `pin`, `debug` routes a confirmed new ask back to `frame`, `answer` refuses to fix and
-points at whichever one owns it.
-
-## Layout
-
-```
-.claude-plugin/     Claude Code manifests (plugin + self-marketplace)
-.codex-plugin/      Codex manifest
-skills/<name>/SKILL.md
+```sh
+python harness/validate.py
+python -m unittest discover -s tests -v
 ```
 
-Both platforms read the same `skills/` directory. One file per skill, one method, no
-per-platform forks — the drift between duplicated copies is the thing this layout exists to
-prevent.
+[Behavioral scenarios](evals/README.md) cover workflow boundaries, stale memory,
+injection, and false verification claims. [Initial results](evals/results-2026-11-14.md)
+state what was and was not tested. The [audit](docs/audit-2026-11-14.md) records findings,
+changes, measured prompt size, tradeoffs, and sources.
 
 ## License
 
-MIT. Fork it, cut what you don't use, rename the rest.
+[MIT](LICENSE).
