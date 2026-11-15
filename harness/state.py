@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -24,10 +25,10 @@ def root_of(repo):
 
 
 def snapshot(repo):
-    """Hash tracked changes and untracked bytes; ignored files/environment are excluded."""
+    """Hash Git-visible tracked changes and untracked files; exclude ignored files."""
     head = git(repo, 'rev-parse', 'HEAD').decode().strip()
     branch = git(repo, 'rev-parse', '--abbrev-ref', 'HEAD').decode().strip()
-    digest = hashlib.sha256()
+    digest = hashlib.sha256(b'skills-harness-snapshot-v2\0')
     # HEAD diff covers staged + unstaged final content; cached diff also detects index changes.
     for args in [('diff', '--no-ext-diff', '--no-textconv', '--binary', 'HEAD', '--'),
                  ('diff', '--no-ext-diff', '--no-textconv', '--cached', '--binary', '--')]:
@@ -38,26 +39,31 @@ def snapshot(repo):
         if not raw:
             continue
         path = repo / os.fsdecode(raw)
-        digest.update(len(raw).to_bytes(8, 'big'))
-        digest.update(raw)
-        if path.is_symlink():
-            digest.update(b'link:' + os.fsencode(os.readlink(path)))
-        else:
-            digest.update(b'file:')
+        mode = path.lstat().st_mode
+        content = hashlib.sha256()
+        if stat.S_ISLNK(mode):
+            content.update(os.fsencode(os.readlink(path)))
+        elif stat.S_ISREG(mode):
             total = 0
             with path.open('rb') as stream:
                 while block := stream.read(65536):
                     total += len(block)
                     if total > 10 * 1024 * 1024:
                         raise ValueError('untracked file exceeds 10 MiB; narrow/clean the workspace')
-                    digest.update(block)
-        digest.update(b'\0')
+                    content.update(block)
+        else:
+            raise ValueError('unsupported untracked entry type')
+        # Length-prefixed path, fixed-width type/mode and digest make each entry unambiguous.
+        digest.update(len(raw).to_bytes(8, 'big'))
+        digest.update(raw)
+        digest.update(mode.to_bytes(4, 'big'))
+        digest.update(content.digest())
     return {'repo': str(repo), 'head': head, 'branch': branch, 'changes_sha256': digest.hexdigest()}
 
 
 def fingerprint(source):
     encoded = json.dumps(source, sort_keys=True, separators=(',', ':')).encode()
-    return 'git-v1:' + hashlib.sha256(encoded).hexdigest()
+    return 'git-v2:' + hashlib.sha256(encoded).hexdigest()
 
 
 def validate(data):
@@ -83,7 +89,7 @@ def validate(data):
             raise ValueError('check values must be nonempty strings')
         if check['result'] not in {'PASS', 'FAIL', 'BLOCKED', 'NOT_RUN'}:
             raise ValueError('invalid check result')
-        if 'source_fingerprint' in check and not re.fullmatch(r'git-v1:[a-f0-9]{64}', check['source_fingerprint']):
+        if 'source_fingerprint' in check and not re.fullmatch(r'git-v[12]:[a-f0-9]{64}', check['source_fingerprint']):
             raise ValueError('invalid check source fingerprint')
     if len(json.dumps(data).encode()) > MAX_BYTES:
         raise ValueError('checkpoint exceeds 16 KiB')

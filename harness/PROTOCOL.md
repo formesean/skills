@@ -83,7 +83,8 @@ is running before removing that specific lock. Saves replace state atomically. C
 are caller-reported observations, not results certified by the tool.
 
 `freshness` compares the current checkout with the snapshot taken at **save time**.
-It covers HEAD, branch, Git-visible tracked and staged changes, and untracked bytes.
+It covers HEAD, branch, Git-visible tracked and staged changes, and untracked
+paths, file types, modes, and contents.
 `STALE` calls for rereading changed sources and invalidating affected checks.
 
 ### Record what each check actually tested
@@ -109,6 +110,9 @@ and evidence in their original fields.
 - `MATCH` means the recorded check fingerprint matches the current checkout.
 - `STALE` means the check fingerprint differs, even if the checkpoint itself matches.
 - `UNKNOWN` means no check fingerprint was recorded. Old checkpoints remain readable.
+
+The `git-v2:` format makes earlier snapshots and `git-v1:` check fingerprints
+report `STALE`. Rerun affected checks and save fresh fingerprints to reuse their results.
 
 These statuses compare Git state. Revalidate ignored config, dependencies,
 submodules, environment, and remote services separately. A fingerprint is not a
