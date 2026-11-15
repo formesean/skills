@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -50,6 +51,38 @@ class CheckpointTests(unittest.TestCase):
         p.write_text('one')
         state.save(self.repo, 'task', self.data, 0)
         p.write_text('two')
+        self.assertEqual(state.resume(self.repo, 'task')['freshness'], 'STALE')
+
+    @unittest.skipUnless(os.name == 'posix', 'requires POSIX executable permissions')
+    def test_untracked_executable_permission_invalidates_check(self):
+        script = self.repo / 'smoke.sh'
+        script.write_text('#!/bin/sh\nexit 0\n')
+        script.chmod(0o700)
+        run = subprocess.run([str(script)], check=True, capture_output=True)
+        self.data['checks'] = [{
+            'command': './smoke.sh',
+            'result': 'PASS',
+            'evidence': f'exit {run.returncode}',
+            'source_fingerprint': state.fingerprint(state.snapshot(self.repo)),
+        }]
+        state.save(self.repo, 'task', self.data, 0)
+
+        script.chmod(0o600)
+        with self.assertRaises(PermissionError):
+            subprocess.run([str(script)], capture_output=True)
+        resumed = state.resume(self.repo, 'task')
+        self.assertEqual(resumed['freshness'], 'STALE')
+        self.assertEqual(resumed['check_source_freshness'], ['STALE'])
+
+    def test_untracked_file_bytes_cannot_encode_a_second_entry(self):
+        first = self.repo / 'a'
+        second = self.repo / 'b'
+        first.write_bytes(b'first')
+        second.write_bytes(b'second')
+        state.save(self.repo, 'task', self.data, 0)
+
+        first.write_bytes(b'first\0' + (1).to_bytes(8, 'big') + b'bfile:second')
+        second.unlink()
         self.assertEqual(state.resume(self.repo, 'task')['freshness'], 'STALE')
 
     def test_branch_change(self):
@@ -102,6 +135,56 @@ class CheckpointTests(unittest.TestCase):
         state.save(self.repo, 'task', self.data, 0)
         state.resume(self.repo, 'task')
         self.assertFalse((self.repo / 'NEVER_EXECUTE').exists())
+
+    def test_matching_checkpoint_can_contain_stale_check_evidence(self):
+        tested = state.fingerprint(state.snapshot(self.repo))
+        (self.repo / 'code.txt').write_text('edited after the check\n')
+        self.data['checks'] = [{
+            'command': 'fixture test',
+            'result': 'PASS',
+            'evidence': 'Observed on original source',
+            'source_fingerprint': tested,
+            'environment': 'local fixture',
+        }]
+        state.save(self.repo, 'qa', self.data, 0)
+        resumed = state.resume(self.repo, 'qa')
+        self.assertEqual(resumed['freshness'], 'MATCH')
+        self.assertEqual(resumed['check_source_freshness'], ['STALE'])
+        self.assertEqual(resumed['task']['checks'], self.data['checks'])
+
+    def test_cli_distinguishes_matching_and_legacy_checks(self):
+        cli = [sys.executable, state.__file__, '--repo', str(self.repo)]
+        tested = subprocess.check_output([*cli, 'fingerprint'], text=True).strip()
+        check = {'command': 'fixture test', 'result': 'PASS', 'evidence': 'observed'}
+        self.data['checks'] = [check, {**check, 'source_fingerprint': tested}]
+        subprocess.run([*cli, 'save', 'qa', '--expected-revision', '0'],
+                       input=json.dumps(self.data), text=True, check=True, capture_output=True)
+        result = json.loads(subprocess.check_output([*cli, 'resume', 'qa'], text=True))
+        self.assertEqual(result['check_source_freshness'], ['UNKNOWN', 'MATCH'])
+
+    def test_rejects_invalid_check_fingerprint(self):
+        self.data['checks'] = [{
+            'command': 'fixture test',
+            'result': 'PASS',
+            'evidence': 'observed',
+            'source_fingerprint': 'not-a-git-fingerprint',
+        }]
+        with self.assertRaisesRegex(ValueError, 'invalid check source fingerprint'):
+            state.save(self.repo, 'qa', self.data, 0)
+
+    def test_v1_evidence_is_readable_but_stale(self):
+        source = state.snapshot(self.repo)
+        old = 'git-v1:' + state.fingerprint(source).split(':', 1)[1]
+        self.data['checks'] = [{
+            'command': 'fixture test',
+            'result': 'PASS',
+            'evidence': 'saved using the previous format',
+            'source_fingerprint': old,
+        }]
+        state.save(self.repo, 'qa', self.data, 0)
+        resumed = state.resume(self.repo, 'qa')
+        self.assertEqual(resumed['freshness'], 'MATCH')
+        self.assertEqual(resumed['check_source_freshness'], ['STALE'])
 
     def test_many_short_entries_roundtrip(self):
         self.data['criteria'] = [''] * 4000

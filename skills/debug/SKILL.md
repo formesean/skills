@@ -23,6 +23,8 @@ description: Investigate a reproducible or reported failure, then apply and veri
 5. Add or use a behavioral regression check. If practical, execute it on the faulty and corrected versions in disposable copies/worktrees. Never reset the user's tree. Otherwise report only the after-fix result and mark before-fix proof unrun.
 6. Remove temporary instrumentation, run affected checks, and report remaining uncertainty. Do not repeat successful checks unless changes invalidate them.
 
+For flaky, cross-layer, or slow failures that resist a quick repro, read [Hard bug reproduction](references/hard-bug-reproduction.md).
+
 ## Output
 
 ```text

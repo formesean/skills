@@ -22,6 +22,8 @@ description: Resolve consequential open decisions in a proposed approach. Use fo
 4. When an earlier decision changes, revisit dependent decisions. Preserve deliberate deferrals with a trigger to resolve them.
 5. Finish when consequential decisions are settled or explicitly deferred. For interview-only requests, stop without code. If implementation is requested, continue under recorded assumptions unless a genuine blocker remains.
 
+If a tradeoff depends on how a flow feels or how its state changes, name one scenario that would settle it. Suggest a disposable prototype when authorized. Record the accepted behavior in the project's existing glossary or decision record if future work depends on it.
+
 ## Output
 
 ```text
