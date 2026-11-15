@@ -27,7 +27,12 @@ error excerpts and source pointers. Do not truncate away the evidence for a clai
 
 The 16 KiB checkpoint cap is an engineering limit, not a model token measurement.
 Save objective, stable criteria, accepted decisions, unresolved blockers, next action,
-and check evidence. No transcripts, hidden reasoning, credentials, customer records,
+and check evidence. Keep each decision with its reason and source pointer; put open
+intent questions in blockers and the smallest authorized continuation in next_action.
+Replace resolved blockers and superseded decisions instead of accumulating history.
+Preserve historical check results as historical until rerun; a new save does not
+refresh old proof. Omit unknown optional check metadata; never infer a past environment
+from the next planned run. No transcripts, hidden reasoning, credentials, customer records,
 or whole logs. Redact before saving; this tool is not a secret scanner.
 
 Separate task state from long-lived knowledge. Promote a verified reusable decision
@@ -44,13 +49,24 @@ pass, and verifier for relevant checks. Delegate only when supported and authori
 by the host. Default to one agent; add at most two independent workers initially.
 More agents cost tokens and can overload small machines.
 
-Send each worker: objective, source revision/paths, constraints, allowed actions,
-expected evidence, and a stop condition. Do not send the whole conversation. For
-independent evaluation, hide the diagnosis and expected answer. Assign one writer per
+Send each worker: objective, selected skill name and resolved SKILL.md path (or
+explicitly none), source revision/paths, constraints, allowed actions, expected
+evidence, and a stop condition. Resolve the path in the worker environment; do not
+assume workers inherit loaded skills. Select review for reviewers, verify for
+verifiers, and only the relevant investigative skill for explorers. A skill does
+not expand the worker's permissions. If unavailable, report the gap and use the
+bounded role instructions without claiming the skill was loaded. Do not send the
+whole conversation. For independent evaluation, hide the diagnosis and expected answer. Assign one writer per
 file; use isolated worktrees for independent edits. The parent checks cited evidence
 and invalidates tests after integration changes. Workers must not recursively delegate,
 publish, or promote memory without authorization. Prompt-only read-only roles are not
 security controls; enforce capabilities with the host sandbox/tool permissions.
+
+Example brief: “Use verify at <resolved path>. Check AC2 on revision <sha> in
+<project path>. Run the existing isolated legacy-row test; do not edit product code
+or contact staging. Return command, exit status, observed dispatch/badge behavior,
+revision/environment, and coverage gaps. Stop after the result or a setup blocker.”
+Replace placeholders before dispatch; send only necessary raw evidence.
 
 ## Checkpoint CLI (Python 3.11+, Git, repository with a commit)
 

@@ -17,7 +17,7 @@ description: Investigate a reproducible or reported failure, then apply and veri
 ## Method
 
 1. Capture exact inputs, expected versus actual behavior, and a minimal sanitized error excerpt. Keep large logs outside the conversation; do not persist raw secrets.
-2. Reproduce when possible. If blocked, state what is missing and continue a bounded source investigation. Inspect recent changes without assuming they are necessarily responsible.
+2. Find an existing project repro recipe or fixture before rebuilding setup. Reproduce when possible. If blocked, state what is missing and continue a bounded source investigation. Inspect recent changes without assuming they are necessarily responsible.
 3. Trace values across boundaries; use targeted search, bisection, or temporary instrumentation. After two attempts without new evidence, change the investigative approach or report the missing evidence.
 4. State the causal mechanism and confidence. Map affected callers. Make the smallest authorized fix; separate unrelated defects.
 5. Add or use a behavioral regression check. If practical, execute it on the faulty and corrected versions in disposable copies/worktrees. Never reset the user's tree. Otherwise report only the after-fix result and mark before-fix proof unrun.

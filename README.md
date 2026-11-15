@@ -65,8 +65,11 @@ Three worker definitions are provided:
   plugin globally registers its project-scoped Codex agents.
 
 Start with one coordinating session. Use bounded independent workers when useful; do
-not start three agents for every ticket. Keep memory local and redacted. A checkpoint
+not start three agents for every ticket. Supply each worker its selected skill and
+resolved path as part of the bounded brief. Keep memory local and redacted. A checkpoint
 matching Git state still needs environment and external-service revalidation.
+
+For recurring repro setup, use the [project recipe template](skills/verify/references/project-verification.md#reusable-project-recipe) in the application repository. For open-ended ideas, frame a small observable outcome and non-goals before planning features.
 
 ## Development and checks
 

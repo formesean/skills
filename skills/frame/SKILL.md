@@ -17,7 +17,7 @@ description: Extract acceptance criteria and ambiguities from a ticket or reques
 ## Method
 
 1. Retrieve the specified source and relevant updates. If inaccessible, report the missing source rather than infer its contents.
-2. State the requested outcome, then number independently checkable criteria with source references. Split separate asks when useful.
+2. State the requested outcome, then number independently checkable criteria with source references. For an open-ended idea, identify the intended user, constraints, non-goals, and smallest useful outcome; propose observable criteria before committing to features. Keep recommendations distinct from accepted scope.
 3. Inspect enough implementation to identify contradictions, existing coverage, and affected paths. Do not turn a framing-only request into implementation.
 4. Ask only blocking intent questions; record reversible implementation assumptions and proceed within authorization. Do not manufacture ambiguity when the source is sufficient.
 5. Keep criterion IDs stable through changes. Hand settled criteria to plan/implement when authorized, or finish the framing deliverable.
