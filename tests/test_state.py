@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -102,6 +103,42 @@ class CheckpointTests(unittest.TestCase):
         state.save(self.repo, 'task', self.data, 0)
         state.resume(self.repo, 'task')
         self.assertFalse((self.repo / 'NEVER_EXECUTE').exists())
+
+    def test_matching_checkpoint_can_contain_stale_check_evidence(self):
+        tested = state.fingerprint(state.snapshot(self.repo))
+        (self.repo / 'code.txt').write_text('edited after the check\n')
+        self.data['checks'] = [{
+            'command': 'fixture test',
+            'result': 'PASS',
+            'evidence': 'Observed on original source',
+            'source_fingerprint': tested,
+            'environment': 'local fixture',
+        }]
+        state.save(self.repo, 'qa', self.data, 0)
+        resumed = state.resume(self.repo, 'qa')
+        self.assertEqual(resumed['freshness'], 'MATCH')
+        self.assertEqual(resumed['check_source_freshness'], ['STALE'])
+        self.assertEqual(resumed['task']['checks'], self.data['checks'])
+
+    def test_cli_distinguishes_matching_and_legacy_checks(self):
+        cli = [sys.executable, state.__file__, '--repo', str(self.repo)]
+        tested = subprocess.check_output([*cli, 'fingerprint'], text=True).strip()
+        check = {'command': 'fixture test', 'result': 'PASS', 'evidence': 'observed'}
+        self.data['checks'] = [check, {**check, 'source_fingerprint': tested}]
+        subprocess.run([*cli, 'save', 'qa', '--expected-revision', '0'],
+                       input=json.dumps(self.data), text=True, check=True, capture_output=True)
+        result = json.loads(subprocess.check_output([*cli, 'resume', 'qa'], text=True))
+        self.assertEqual(result['check_source_freshness'], ['UNKNOWN', 'MATCH'])
+
+    def test_rejects_invalid_check_fingerprint(self):
+        self.data['checks'] = [{
+            'command': 'fixture test',
+            'result': 'PASS',
+            'evidence': 'observed',
+            'source_fingerprint': 'not-a-git-fingerprint',
+        }]
+        with self.assertRaisesRegex(ValueError, 'invalid check source fingerprint'):
+            state.save(self.repo, 'qa', self.data, 0)
 
     def test_many_short_entries_roundtrip(self):
         self.data['criteria'] = [''] * 4000

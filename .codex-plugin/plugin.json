@@ -1,6 +1,6 @@
 {
   "name": "skills",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Sean's engineering method as portable skills: frame, pin, plan, implement, verify, ship \u2014 plus answer, debug, review, and which. Works in Claude Code and Codex.",
   "author": {
     "name": "Sean Aguilar",

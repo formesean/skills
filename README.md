@@ -50,8 +50,9 @@ then repairs within the same task. “Write a commit message” does not authori
 
 [The harness protocol](harness/PROTOCOL.md) describes bounded retrieval, checkpointing,
 freshness checks, recovery, and agent handoffs. `harness/state.py` saves compact local
-task state under the target repository's Git metadata. It never executes saved commands
-and does not run models. It is opt-in: clone this repo to use the Python CLI.
+task state under the target repository's Git metadata. Optional per-check fingerprints
+flag evidence from a different checkout state, even when the checkpoint itself matches.
+The CLI is opt-in and uses the checkout of this repo.
 
 Three worker definitions are provided:
 

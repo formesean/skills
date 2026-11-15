@@ -82,10 +82,35 @@ instead of overwriting silently. A crashed writer can leave a `.lock`; verify no
 is running before removing that specific lock. Saves replace state atomically. Checks
 are caller-reported observations, not results certified by the tool.
 
-`MATCH` means HEAD, branch, tracked diff/index, and untracked bytes match the saved
-snapshot. It does not mean tests remain valid: ignored config, dependencies, submodules,
-environment, and remote services require separate revalidation. `STALE` means reread
-changed sources and invalidate affected checks before proceeding. Recheck near sensitive
-actions because a snapshot is not a transactional lock on the repository. An untracked
-file over 10 MiB aborts snapshotting; exclude build outputs appropriately rather than
-silently skipping source. Do not run against hostile repositories without isolation.
+`freshness` compares the current checkout with the snapshot taken at **save time**.
+It covers HEAD, branch, Git-visible tracked and staged changes, and untracked bytes.
+`STALE` calls for rereading changed sources and invalidating affected checks.
+
+### Record what each check actually tested
+
+Run this before and after a check whose result you want to reuse:
+
+```sh
+python /path/to/skills/harness/state.py --repo /path/to/project fingerprint
+```
+
+Record the shared value as the check's optional `source_fingerprint` only when the
+two values match and the command actually tested that checkout. Omit it if the
+source moved, the result predates fingerprinting, or the check targeted an
+external build. Do not generate a fingerprint later to label an earlier result.
+Keep temporary checkpoint input and generated evidence outside the checkout or
+in an existing ignored location so those files do not alter the fingerprint.
+Use the optional `environment` string for the actual setup, such as
+`local seeded database` or `staging build abc123`. Preserve the observed result
+and evidence in their original fields.
+
+`resume` returns `check_source_freshness` in the same order as the checks:
+
+- `MATCH` means the recorded check fingerprint matches the current checkout.
+- `STALE` means the check fingerprint differs, even if the checkpoint itself matches.
+- `UNKNOWN` means no check fingerprint was recorded. Old checkpoints remain readable.
+
+These statuses compare Git state. Revalidate ignored config, dependencies,
+submodules, environment, and remote services separately. A fingerprint is not a
+transactional lock. An untracked file over 10 MiB aborts snapshotting. Exclude
+build outputs appropriately. Use isolation for repositories you do not trust.

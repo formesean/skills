@@ -23,6 +23,8 @@ description: Check a change against its acceptance criteria using relevant tests
 5. Reuse results only for unchanged relevant inputs, environment, and command. If a required check is unavailable, report BLOCKED rather than PASS or a fabricated failure. Report actual failing checks as FAIL, even when another check is blocked.
 6. For verification-only requests, report without repair. For an authorized fix workflow, diagnose and repair, then rerun invalidated checks. Provide manual steps only for meaningful behavior not already exercised.
 
+Read [Project verification and QA handoff](references/project-verification.md) when the check must drive a real user path, distinguish local from staging evidence, or give QA reproducible steps.
+
 ## Output
 
 ```text
