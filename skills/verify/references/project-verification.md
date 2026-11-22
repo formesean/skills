@@ -5,6 +5,8 @@ If the same feature repeatedly takes setup discovery, write one short project-lo
 recipe next to the existing checks. Start with the feature under review. When creation
 is authorized, use the compact template below; inspection-only work reports the gap
 without writing files. Reuse existing fixtures and runners rather than adding a framework.
+Apply the same verification authorization and scope rules to recipe steps and
+follow-up checks. Record steps that cannot run within those limits as blocked.
 
 1. **Prepare** the intended build, isolated test data, required roles and feature
    flags. Confirm the application is ready to exercise with relevant dependencies.
